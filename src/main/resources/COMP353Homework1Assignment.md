@@ -1,7 +1,11 @@
 # <div align = "center"> COMP353 Homework 1 </div>
 ## <div align = "center"> Sam Bernau & Shane Lievens </div>
 
-## DDL/DML Script 
+## Contributions 
+- Shane: queries 1-3
+- Sam: queries 4-6
+
+## DDL/DML Script
 ```sql
 CREATE TABLE recording_label(
 	label_id varchar(50) PRIMARY KEY,
@@ -84,14 +88,14 @@ CREATE TABLE written_by(
 ### Homework Answers
 
 #### 1. [16 points] List the songs written by artists born no later than 1975, order the list by songTitle in ascending order. (songTitle, firstName, lastName, yearBorn)
-##### Query 
+##### Query
 ```sql
-SELECT song_title, first_name, last_name, year_born 
-FROM song S, written_by W , artist A 
-WHERE S.song_code = W.song_code --make sure song_code's match between tables
-AND W.artist_id = A.artist_id --make sure artist_id's match between tables
-AND A.year_born <= 1975 
-ORDER BY song_title ASC;
+SELECT song.song_title, artist.first_name, artist.last_name, artist.year_born
+FROM song
+JOIN written_by ON song.songCode = written_by.song_code
+JOIN artist ON written_by.artist_id = artist.artist_id
+WHERE artist.year_born <= 1975
+ORDER BY song.song_title ASC;
 ```
 ##### Query Output
 | song\_title             | first\_name | last\_name | year\_born |
@@ -120,14 +124,14 @@ ORDER BY song_title ASC;
 #### 2. [16 points] For every artist, find the number of songs rated top 10. List the count of songsin descending order.(firstName, lastName, countOfTopSong)
 ##### Query
 ```sql
-SELECT artist.first_name,artist.last_name, COUNT(*) AS top_10_count
-FROM song
-         INNER JOIN written_by ON song.song_code = written_by.song_code
-         INNER JOIN artist ON written_by.artist_id = artist.artist_id
+SELECT artist.first_name, artist.last_name, COUNT(DISTINCT top_songs.song_code) as count_of_top_song
+FROM artist
+         INNER JOIN written_by ON artist.artist_id = written_by.artist_id
+         INNER JOIN song ON written_by.song_code = song.song_code
          INNER JOIN top_songs ON song.song_code = top_songs.song_code
 WHERE top_songs.rating >= 10
-GROUP BY artist.first_name, artist.last_name
-ORDER BY top_10_count DESC;
+GROUP BY artist.artist_id
+ORDER BY count_of_top_song DESC;
 ```
 ##### Query Output
 | first\_name | last\_name | top_10_count |
@@ -138,13 +142,14 @@ ORDER BY top_10_count DESC;
 #### 3. [17 points] List the maximum, minimum, and average of cdSold per artist. Order by the artist’s first name in ascending order (firstName, lastName, maxNumber, minNumber, avgNumber)
 ##### Query
 ```sql
-SELECT A.first_name, A.last_name, MAX(cd.number_sold) as max_sold, MIN(cd.number_sold) as min_sold, ROUND(AVG(cd.number_sold), 2) as avg_sold
-FROM artist A
-JOIN member M ON A.artist_id = M.artist_id
-JOIN musical_group MG on M.group_code = MG.group_code
-JOIN cd ON cd.group_code = MG.group_code
-GROUP BY A.first_name, A.last_name
-order by A.first_name;
+SELECT artist.first_name, artist.last_name, MAX(cd.number_sold) AS max_number,
+       MIN(cd.number_sold) AS min_number, AVG(cd.number_sold) AS avg_number
+FROM cd
+         INNER JOIN musical_group ON cd.group_code = musical_group.group_code
+         INNER JOIN member ON musical_group.group_code = member.group_code
+         INNER JOIN artist ON member.artist_id = artist.artist_id
+GROUP BY artist.first_name, artist.last_name
+ORDER BY artist.first_name ASC;
 ```
 ##### Query Output
 | first\_name | last\_name | max\_sold | min\_sold | avg\_sold |
@@ -162,8 +167,8 @@ order by A.first_name;
 | Michelle    | Agnelo     | 800000    | 100000    | 450000    |
 | Steve       | Nash       | 800000    | 750000    | 775000    |
 
-#### 4. [17 points] How many top songs has each recording label produced? Order by the number of songs in descending order. 
-- Note: In this database, a song can be part of multiple CDs 
+#### 4. [17 points] How many top songs has each recording label produced? Order by the number of songs in descending order.
+- Note: In this database, a song can be part of multiple CDs
 - Hint: Use Distinct to get the most accurate result. (labelName, numberOfSong)
 ##### Query
 ```sql
